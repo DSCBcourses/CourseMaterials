@@ -1,0 +1,115 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Examples of Descriptive Statistics and Linear Regression in R
+Todd Nystul
+January 13, 2023
+
+```{r}
+#load libraries
+library(tidyverse)
+```
+
+```{r}
+#load data
+data("ChickWeight")
+CloneInduction <- read.csv("../Data/CloneInduction.csv")
+```
+
+```{r}
+#explore data and perform basic descriptive statistics
+
+#view the data
+head(ChickWeight)
+plot(x = ChickWeight$Time, y = ChickWeight$weight)
+```
+
+```{r}
+#save the plot as a file to the Results file
+pdf("../Results/Time_vs_Weight.pdf")
+plot(x = ChickWeight$Time, y = ChickWeight$weight)
+dev.off()
+```
+
+```{r}
+#descriptive statistics output to the terminal
+mean(ChickWeight$weight)
+sd(ChickWeight$weight)
+
+#'pipe' that groups data and then performs descriptive statistics
+ChickWeight %>% group_by(Diet) %>% summarise(mean_weight = mean(weight), sd_weight = sd(weight))
+
+#Assign this information to a dataframe so it can be used later
+Weight_summary <- ChickWeight %>% group_by(Diet) %>% summarise(mean_weight = mean(weight), sd_weight = sd(weight))
+
+#Write the dataframe to a csv file
+write.csv(Weight_summary, "../Data/weight_summary.csv")
+
+#Write the dataframe to a csv file without the index numbers included
+write.csv(Weight_summary, "../Data/weight_summary.csv", row.names = F)
+
+#read.csv is for reading csv files into a dataframe
+Weight_summary1 <- read.csv("../Data/weight_summary.csv")
+```
+
+```{r}
+#linear regression to test whether weight can be predicted by Time
+Weight_Time.lm <- lm(weight~Time, data = ChickWeight)  #order doesn't matter here
+summary(Weight_Time.lm)
+
+#visualize linear model on a graph
+pdf("../Results/Time_vs_Weight_lm.pdf")
+plot(x = ChickWeight$Time, y = ChickWeight$weight)
+abline(Weight_Time.lm)
+dev.off()
+```
+
+```{r}
+#add some data to the dataset
+ChickWeight$ChirpFreq <- rnorm(578,10,1)
+
+#test for linear correlation of Time with weight and chirp frequency
+Weight_Time_chirp.lm <- lm(weight~Time + ChirpFreq, data = ChickWeight)  #order doesn't matter here
+summary(Weight_Time_chirp.lm)
+```
+
+```{r}
+#perform ANOVA to test the effect of each diet on growth rate
+weight_diet.aov <- aov(weight ~ Diet, data = ChickWeight)
+summary(weight_diet.aov)
+
+#Use TukeyHSD to identify which comparisons are significant
+TukeyHSD(weight_diet.aov)
+
+#plot TukeyHSD results
+plot(TukeyHSD(weight_diet.aov))
+```
+
+```{r}
+#put data into tidy format and calculate percentages
+CloneInduction.l <- CloneInduction %>% pivot_longer(!experiment, names_to = "CloneType", values_to = "Count")
+CloneInduction.l <- CloneInduction.l %>% group_by(experiment) %>% mutate(percent = (Count/sum(Count)))
+```
+
+```{r}
+#t-test on diet 1 vs 3
+ChickWeight_diet1v3 <- ChickWeight %>% filter(Diet == 1 | Diet == 3)
+t.test(weight~Diet, data = ChickWeight_diet1v3)
+```
+
+```{r}
+#sample chi-squared test
+chi_data <- matrix(c(25,3,2,64), ncol = 2)
+```
+
+```{r}
+#making untidy data into a tidy format
+#Clone Induction data is read in using the Load Data chunk at the top of the notebook
+CloneInduction.p <- CloneInduction %>% pivot_longer(!experiment, names_to = "status") 
+
+#convert the count of observations to percent within each group
+CloneInduction.p <- CloneInduction.p %>% group_by(experiment) %>% mutate(percent = value/sum(value))
+```
+
