@@ -11,6 +11,8 @@ January 14, 2025
 ```{r}
 # load libraries
 library(tidyverse)
+library(dplyr)
+library(multcomp)
 ```
 
 Make some untidy data and then make it tidy
@@ -44,6 +46,14 @@ dev.off()
 ```
 
 ```{r}
+# use the plot() function to create a scatter plot showing the relationship between sepal length and sepal width
+# refer to line 37 above if you need help but don't just copy/paste--type it in yourself!
+
+plot(x = iris$Sepal.Length, y = iris$Sepal.Width)
+```
+
+
+```{r}
 mean(iris$Sepal.Length)
 
 # use median() and sd() to calculate the median and standard deviation of sepal length
@@ -69,10 +79,12 @@ Alternatively, perform a distribution test
 shapiro.test(iris$Sepal.Width)
 ```
 
-A p-value *greater* 0.05 means that the test does not reject the null hypothesis (i.e. that the data do not deviate significantly from a normal distribution)
+A p-value *greater* 0.05 means that the test does not reject the null hypothesis (i.e. p > 0.05 means that the data do not deviate significantly from a normal distribution)
 
 ```{r}
 # repeat to generate a q-q plot and perform a Shapiro Test for Sepal Length
+# refer to lines 70, 71 and 77 above if you need help but do not copy/paste!
+
 
 ```
 
@@ -83,27 +95,28 @@ head(virginica) # shows the first six rows of the dataframe
 ```
 
 ```{r}
-# filter using two criteria, species virginica and Sepal.Length greater than 6, separating each criterion with a comma
-
+# filter using two criteria, species virginica and Sepal.Length greater than 6, separating each criterion with a comma and store the result in a dataframe called "virginica6"
+virginica6 <- filter(iris, Species == "virginica", Sepal.Length > 6)
 
 tail(virginica6)  # shows the last 6 rows of the dataframe
 ```
 
 ```{r}
-# generate a sample distribution of Sepal Width in virginica
-
+# generate a histogram showing the sample distribution of Sepal Width in virginica
+hist(virginica$Sepal.Width)
 ```
 
 ```{r}
 # generate a q-q plot of sepal length in virginica
-
+qqnorm(virginica$Sepal.Length)
+qqline(virginica$Sepal.Length)
 ```
 
 ### Parse the data for further analysis
 
 ```{r}
 # use select(data, column1, column2, ...) to select specified columns
-Sepal <- select(iris, Sepal.Length, Sepal.Width)
+Sepal <- dplyr::select(iris, Sepal.Length, Sepal.Width)
 # select all columns from Sepal.Length to Petal.Length using a : to separate the beginning and end of the range
 
 
@@ -144,7 +157,8 @@ First, are the data normally distributed?
 shapiro.test(virginica$Sepal.Width)
 
 # use the filter() function in a pipe to filter the iris dataset for data about the setosa species and repeat the Shapiro test on this subset of the data
-
+setosa <- iris %>% filter(Species == "setosa")
+shapiro.test(setosa$Sepal.Width)
 
 ```
 
@@ -152,7 +166,7 @@ shapiro.test(virginica$Sepal.Width)
 
 ```{r}
 # use the filter() function in a pipe to separate out the data for both virginica and setosa into a new dataframe called VergSeto.  Hint: the | character is used to mean "or"
-
+VirgSeto <- iris %>% filter(Species == "virginica" | Species == "setosa")
 
 # to perform chi-squared test
 VirgSeto$Species <- droplevels(VirgSeto$Species)  # this is to correct for an odd quirk that doesn't come up often
@@ -179,7 +193,7 @@ The p-value is less than 0.05 so we would typically consider the difference betw
 cor.test(virginica$Sepal.Length, virginica$Sepal.Width)
 ```
 
-Low p-value indicates that a linear model of these data is appropriate; modest r-squared value indicates that the correlation is mediocre. What does this look like on a graph?
+Low p-value indicates that a linear model of these data is appropriate; modest r-squared value (cor) indicates that the correlation is mediocre. What does this look like on a graph?
 
 ```{r}
 # generate a linear model of the data
@@ -195,14 +209,43 @@ abline(Sepal_lm)
 ```{r}
 # Predict the sepal length based on sepal width (in reality, you probably wouldn't use these data in this way--pretend it is a standard curve or something like that)
 
-new_data <- data_frame(Sepal.Width = c(3,4,5))
-predict(Sepal_lm, newdata = new_data)
+input_data <- data_frame(Sepal.Width = c(3,4,5)) # this just creates some sample input data
+predict(Sepal_lm, newdata = input_data) # here, we query the linear model, Sepal_lm, created above with the input data
 ```
 
 Now, repeat this code to determine and graph the correlation between sepal length and petal length in virginica. How does it compare to the correlation between sepal length and sepal width?
 
+```{r}
+Sepal_petal <- lm(Sepal.Length ~ Petal.Length, data = virginica)
 
-**Test 4**:  Is there a difference in mean petal length among any of the species?
+plot(x=virginica$Petal.Length, y=virginica$Sepal.Length)
+abline(Sepal_petal)
+```
+
+```{r}
+cor.test(virginica$Sepal.Length, virginica$Petal.Length)
+```
+
+
+
+**Test 4**:  Is there a difference in mean petal length between virginica and either of the other two species?
+
+```{r}
+# Perform Dunnett's test to compare the petal length of the other two species to the control (virginica)
+
+# First, make sure R sees the data in the Species column as a factor and set the level order of this factor
+iris$Species <- as.factor(iris$Species) 
+iris$Species <- factor(iris$Species, levels = c("virginica", "setosa", "versicolor")) 
+
+# Then, create a linear model that predicts Petal Length as a function of Species
+model <- lm(Petal.Length ~ Species, data = iris)
+
+# Finally, use the General Linear Hypothesis Test (glht) to perform a Dunnett's Test, which will use the first level as a control
+summary(glht(model, linfct = mcp(Species = "Dunnett")))
+```
+
+
+**Test 5**:  Is there a difference in mean petal length among any of the species?
 
 Null hypothesis: The mean petal lengths among the species are not different from one another
 
@@ -220,15 +263,36 @@ TukeyHSD(iris_aov)
 All pairwise combinations of means are significantly different!
 
 ```{r}
+# An alternative to TukeyHSD is the pairwise.t.test
+attach(iris)
+pairwise.t.test(Petal.Length, Species, p.adjust.method = "bonf")
+detach()
+```
+
+
+```{r}
 # power analysis
 library(pwr)
 library(lsr)
+```
 
+These libraries load functions that are useful for analysis of effect sizes and power.  
+
+Cohens D returns a unitless measure of effect size, where < 0.5 is generally considered low, 0.5-0.8 is considered moderate, and > 0.8 is considered high.
+```{r}
 versicolor <- iris %>% filter(Species == "versicolor")
 cohensD(virginica$Sepal.Length, versicolor$Sepal.Length)
+```
 
-#  exactly one parameter in pwr.t2n.test(n1 = NULL, n2 = NULL, d = NULL, sig.level = 0.05, power = NULL) must be NULL.  The function will  solve for the missing parameter
-
+The power test, pwr.t2n.test takes the following inputs: 
+  pwr.t2n.test(n1 = NULL, n2 = NULL, d = NULL, sig.level = 0.05, power = NULL) where 
+    *n1 and n2* are the sample sizes of the two samples to be compared 
+    *d* is the effect size
+    *sig.level* is the significance level (i.e. the threshold below which you are willing to rejecct the null hypothesis)
+    *power* is a measure of sensitivity--the higher it is, the less likely you are to inappropriately accept the null hypthesis
+  The function must be NULL for exactly one of these parameters and it will solve for the missing parameter
+  
+```{r}
 pwr.t2n.test(n1 = 25, n2 = 25, d = 1.12, sig.level = 0.05) # d is the effect size
 pwr.t2n.test(n1 = 25, d = 1.12, sig.level = 0.05, power = 0.9)
 
@@ -236,4 +300,5 @@ pwr.t2n.test(n1 = 25, d = 1.12, sig.level = 0.05, power = 0.9)
 # VirgSeto chi-sq value is 78 and n is 100, so sqrt(78/100) = 0.88
 pwr.chisq.test(w = 0.88, N = 25, df = 1, sig.level = 0.05) 
 ```
+
 
