@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 Todd Nystul\
-January 14, 2025
+January 13, 2026
 
 ### Load libraries and load and summarize data
 
@@ -47,9 +47,8 @@ dev.off()
 
 ```{r}
 # use the plot() function to create a scatter plot showing the relationship between sepal length and sepal width
-# refer to line 37 above if you need help but don't just copy/paste--type it in yourself!
+# refer to line 44 above if you need help but don't just copy/paste--type it in yourself!
 
-plot(x = iris$Sepal.Length, y = iris$Sepal.Width)
 ```
 
 
@@ -83,7 +82,7 @@ A p-value *greater* 0.05 means that the test does not reject the null hypothesis
 
 ```{r}
 # repeat to generate a q-q plot and perform a Shapiro Test for Sepal Length
-# refer to lines 70, 71 and 77 above if you need help but do not copy/paste!
+# refer to lines 71, 72 and 78 above if you need help but do not copy/paste!
 
 
 ```
@@ -103,21 +102,20 @@ tail(virginica6)  # shows the last 6 rows of the dataframe
 
 ```{r}
 # generate a histogram showing the sample distribution of Sepal Width in virginica
-hist(virginica$Sepal.Width)
+
 ```
 
 ```{r}
 # generate a q-q plot of sepal length in virginica
-qqnorm(virginica$Sepal.Length)
-qqline(virginica$Sepal.Length)
+
 ```
 
 ### Parse the data for further analysis
 
 ```{r}
-# use select(data, column1, column2, ...) to select specified columns
+# use dplyr::select(data, column1, column2, ...) to select specified columns
 Sepal <- dplyr::select(iris, Sepal.Length, Sepal.Width)
-# select all columns from Sepal.Length to Petal.Length using a : to separate the beginning and end of the range
+# select all columns from Sepal.Length to Petal.Length using a : to separate the beginning and end of the range and store the result in a dataframe called 'iris_subset'
 
 
 head(Sepal, 3)
@@ -135,7 +133,7 @@ SepalLengthSummary <- iris %>%
   summarize(
     SepalLength_mean = mean(Sepal.Length),
     SepalLength_sd = sd(Sepal.Length),
-    SepalLength_se = sd(Sepal.Length)/sqrt(length(Sepal.Length))
+    SepalLength_se = sd(Sepal.Length)/sqrt(length(Sepal.Length))  # See note below
     )
 
 barplot(SepalLengthSummary$SepalLength_mean, names.arg = SepalLengthSummary$Species)
@@ -153,20 +151,16 @@ write.csv(SepalLengthSummary, "../Results/SepalLengthSummary.csv")
 First, are the data normally distributed?
 
 ```{r}
-# test for normality
-shapiro.test(virginica$Sepal.Width)
+# Use a shapiro test to test for normality in the set of virginica sepal widths
 
 # use the filter() function in a pipe to filter the iris dataset for data about the setosa species and repeat the Shapiro test on this subset of the data
-setosa <- iris %>% filter(Species == "setosa")
-shapiro.test(setosa$Sepal.Width)
 
 ```
 
-**Test 1**: Does the roundness of setosa sepals differ from the roundness of virginica sepals (as defined by the RoundSepal category)?
+**Test 1**: Does the roundness of setosa sepals significantly differ from the roundness of virginica sepals (as defined by the RoundSepal category)?
 
 ```{r}
 # use the filter() function in a pipe to separate out the data for both virginica and setosa into a new dataframe called VergSeto.  Hint: the | character is used to mean "or"
-VirgSeto <- iris %>% filter(Species == "virginica" | Species == "setosa")
 
 # to perform chi-squared test
 VirgSeto$Species <- droplevels(VirgSeto$Species)  # this is to correct for an odd quirk that doesn't come up often
@@ -174,7 +168,7 @@ table(VirgSeto$Species, VirgSeto$RoundSepal)  # this line just shows you what co
 chisq.test(table(VirgSeto$Species, VirgSeto$RoundSepal)) # here, we actually run the test
 ```
 
-**Test 2**: Does sepal width vary between virginica and setosa? 
+**Test 2**: Is sepal width significantly different between virginica and setosa? 
 
 Null hypothesis: The mean sepal widths of the two species are not different from each other 
 
@@ -209,43 +203,28 @@ abline(Sepal_lm)
 ```{r}
 # Predict the sepal length based on sepal width (in reality, you probably wouldn't use these data in this way--pretend it is a standard curve or something like that)
 
-input_data <- data_frame(Sepal.Width = c(3,4,5)) # this just creates some sample input data
+input_data <- data.frame(Sepal.Width = c(3,4,5)) # this just creates some sample input data
 predict(Sepal_lm, newdata = input_data) # here, we query the linear model, Sepal_lm, created above with the input data
 ```
 
 Now, repeat this code to determine and graph the correlation between sepal length and petal length in virginica. How does it compare to the correlation between sepal length and sepal width?
 
 ```{r}
-Sepal_petal <- lm(Sepal.Length ~ Petal.Length, data = virginica)
+#Use the lm() function to generate a linear model and store it as 'Sepal_petal'
 
-plot(x=virginica$Petal.Length, y=virginica$Sepal.Length)
-abline(Sepal_petal)
+#plot the daata and the linear model using the plot() and abline() functions
+
 ```
 
 ```{r}
-cor.test(virginica$Sepal.Length, virginica$Petal.Length)
+#Use cor.test() to determine the correlation between sepal length and petal length
+
 ```
 
 
 
-**Test 4**:  Is there a difference in mean petal length between virginica and either of the other two species?
 
-```{r}
-# Perform Dunnett's test to compare the petal length of the other two species to the control (virginica)
-
-# First, make sure R sees the data in the Species column as a factor and set the level order of this factor
-iris$Species <- as.factor(iris$Species) 
-iris$Species <- factor(iris$Species, levels = c("virginica", "setosa", "versicolor")) 
-
-# Then, create a linear model that predicts Petal Length as a function of Species
-model <- lm(Petal.Length ~ Species, data = iris)
-
-# Finally, use the General Linear Hypothesis Test (glht) to perform a Dunnett's Test, which will use the first level as a control
-summary(glht(model, linfct = mcp(Species = "Dunnett")))
-```
-
-
-**Test 5**:  Is there a difference in mean petal length among any of the species?
+**Test 4**:  Is there a significant difference in mean petal length among any of the species?
 
 Null hypothesis: The mean petal lengths among the species are not different from one another
 
@@ -253,6 +232,7 @@ Alternative hypothesis:  There is a significant difference in the mean petal len
 
 ```{r}
 # To test for a significant difference between the means of multiple (>2) groups, perform an ANOVA test
+# The aov function creates the linear model automatically ()
 iris_aov <- aov(Petal.Length ~ Species, data = iris)
 summary(iris_aov)
 ```
@@ -268,6 +248,58 @@ attach(iris)
 pairwise.t.test(Petal.Length, Species, p.adjust.method = "bonf")
 detach()
 ```
+
+**Test 5**:  Is there a significant difference in mean petal length between virginica and either of the other two species?
+
+```{r}
+# Perform Dunnett's test to compare the petal length of the other two species to the control (virginica)
+
+# First, make sure R sees the data in the Species column as a factor and set the level order of this factor
+iris$Species <- as.factor(iris$Species) 
+iris$Species <- factor(iris$Species, levels = c("virginica", "setosa", "versicolor")) 
+
+# Then, create a linear model that predicts Petal Length as a function of Species
+model <- lm(Petal.Length ~ Species, data = iris)
+
+# Finally, use the General Linear Hypothesis Test (glht) to perform a Dunnett's Test, which will use the first level as a control
+summary(glht(model, linfct = mcp(Species = "Dunnett")))
+```
+
+**Test 6**:  Is there a significant difference in the number of petals (using randomly generated data) between setosa and virginica?
+
+```{r}
+#code to generate random count data for the number of petals in setosa and virginica
+
+set.seed(123)
+
+#use different lambda values for each species so there will be a significant difference in count data between species
+lambda_by_species <- c(
+  setosa = 4,
+  verginica = 6
+)
+
+VirgSeto$PetalCount_poisson <- rpois(
+  n = nrow(VirgSeto),
+  lambda = lambda_by_species[VirgSeto$Species]
+)
+
+head(VirgSeto)
+```
+
+```{r}
+# Fit a Poisson regression model that allows each species to have its own expected count
+VirgSeto_glm <- glm(PetalCount_poisson ~ Species, family = poisson(link = "log"), data = VirgSeto)
+
+# Create a null model that assumes a shared mean for both species
+VirgSeto_null <- update(VirgSeto_glm, . ~ 1)
+
+# Test whether assuming species-specific means significantly improves the model.
+lrt <- anova(VirgSeto_null, VirgSeto_glm, test = "Chisq")
+
+lrt
+```
+
+
 
 
 ```{r}
@@ -300,5 +332,3 @@ pwr.t2n.test(n1 = 25, d = 1.12, sig.level = 0.05, power = 0.9)
 # VirgSeto chi-sq value is 78 and n is 100, so sqrt(78/100) = 0.88
 pwr.chisq.test(w = 0.88, N = 25, df = 1, sig.level = 0.05) 
 ```
-
-
