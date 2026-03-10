@@ -1,0 +1,28 @@
+name: imaging_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - scikit-image
+  - scikit-learn
+  - seaborn
+  - imageio
+  - tifffile
+  - pillow
+  - opencv
+  - jupyterlab
+  - notebook
+  - nb_conda_kernels
+  - ipykernel
+  - pip:
+    - stardist
+    - csbdeep
+    - cellpose
+    - matplotlib-inline
+    - scikit-image
