@@ -1,4 +1,4 @@
-name: imaging_env
+name: imaging_env2
 channels:
   - conda-forge
   - defaults
