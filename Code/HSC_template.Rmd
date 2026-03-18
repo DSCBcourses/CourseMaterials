@@ -1,0 +1,62 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# read in tidyverse library
+
+# read in synthetic_hsc_measurements.csv as HSC and ExperimentalDesign.csv as ExptDesign
+HSC <-
+ExptDesign <-
+
+# use a pipe to select only the replicate and file columns from ExptDesign and store the result as ExptDesign
+ExptDesign <-
+  
+# use the merge function to merge HSC and ExptDesign by the file column
+HSC <- 
+```
+
+```{r}
+# use a pipe and the summarize function to group the data by replicate and condition and then calculate the 
+# mean of the mito_mean_masked and percent_mito columns
+
+HSC_summary <- 
+
+  
+HSC_summary # this line will display your results
+```
+
+```{r}
+# perform t.tests on the mean mitochondrial signal and mean percent mitochondria 
+# as a funciton of condition using the data in HSC_summary
+
+```
+
+```{r}
+# use ggplot to create box plots with data points overlaid that show the mean mitochondrial
+# values on the y axis, separated by condition on the x axis
+
+
+```
+
+```{r}
+# use ggplot to create box plots with data points overlaid that show the mean percent mitochondria
+# values on the y axis, separated by condition on the x axis
+
+
+```
+
+Provide short answers to these questions in the space below:
+
+1. Is the T-test appropriate here?  Why or why not?
+
+2. How do you interpret these results?
+
+3. Describe one or more potential sources of error in your segmentation and image analysis pipeline that may affect the results
+
+4. Why do you get different results from measurements of mean intensity of the mitochondrial dye and the area of the signal?  Does it make sense that one would be different and the other would be the same?
+
+
+
+
